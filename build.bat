@@ -44,8 +44,12 @@ del *.ilk > NUL 2> NUL
 
 cl %compiler_settings% %source_files% /link %linker_settings% -OUT:%exe_name%
 
+
 del *.obj > NUL 2> NUL
 popd
+
+
+build\%exe_name% data\AllSuiteA.bin 0x4000
 
 :end_of_build
 

@@ -93,6 +93,7 @@ HandleInterrupt(mos6502* Chip, interrupt_type Type)
    Chip->PC = Addr;
 }
 
+#if 0
 //
 // Addressing modes
 //
@@ -264,10 +265,51 @@ inline void beq(mos6502* Chip)
       Chip->PC += *(i8*)&Displacement;
    }
 }
+#endif
+
+#define NextByte Read(Chip, Chip->PC++)
+#define rd16(a,b) (((u16)Chip->Ram[a])<<8|Chip->Ram[b])
+
+#define AM_imm u8 r=NextByte
+#define AM_a   u8 r=(NextByte|((u16)NextByte)<<8)
+#define AM_zp  u8 r=Chip->Ram[(u16)NextByte]
+#define AM_r   u8 r=(((i8)NextByte)+(Chip->PC-1)
+#define AM_ax  u8 r=Chip->Ram[Chip->X+(NextByte|((u16)NextByte)<<8)]
+#define AM_ay  u8 r=Chip->Ram[Chip->Y+(NextByte|((u16)NextByte)<<8)]
+#define AM_zpx u8 r=Chip->Ram[(Chip->X+NextByte)&0xff]
+#define AM_zpy u8 r=Chip->Ram[(Chip->Y+NextByte)&0xff]
+#define AM_ix  u8 b=(Chip->X+NextByte)&0xff; u8 r=Chip->Ram[(((u16)Chip->Ram[b+1])<<8|Chip->Ram[b])]
+#define AM_iy	u8 i=NextByte; u16 r=rd16(i, (i+1)%0x0100) + Chip->Y;
 
 inline void
 ExecInstruction(mos6502* Chip, u8 Opcode)
 {
+   switch(Opcode)
+   {
+      case 0x84: { AM_zp; Chip->Ram[r]=Chip->Y;    } break; // STY zp
+      case 0x85: { AM_zp; Chip->Ram[r]=Chip->A;    } break; // STA zp
+      case 0x8D: { AM_a; Chip->Ram[r]=Chip->A;     } break; // STA addr
+      case 0x91: { AM_iy; Chip->Ram[r]=Chip->A;    } break; // STA iy
+      case 0x95: { AM_zpx; Chip->Ram[r]=Chip->A;   } break; // STA zpx
+      case 0x9D: { AM_ax; Chip->Ram[r]=Chip->A;    } break; // STA ax
+      case 0xA0: { AM_imm; Chip->Y=r;              } break; // LDY #
+      case 0xA2: { AM_imm; Chip->X=r;              } break; // LDX #
+      case 0xA5: { AM_zp; Chip->A=r;               } break; // LDA zp
+      case 0xA9: { AM_imm; Chip->A=r;              } break; // LDA #
+      case 0xAD: { AM_a; Chip->A=Chip->Ram[r];     } break; // LDA a      
+      case 0xB1: { AM_iy; Chip->A=Chip->Ram[r];    } break; // LDA iy
+      case 0xB5: { AM_zpx; Chip->A=Chip->Ram[r];   } break; // LDA zpx
+
+      // TODO(scott): finish implementing this
+      case 0xBD: { AM_ax; Chip->A=Chip->Ram[r];    } break; // LDA ax
+
+      default: {
+         fprintf(stderr, "Unimplemented Opcode: %02X\n", Opcode);
+         exit(1);
+      } break;
+   }
+
+#if 0
    switch(Opcode)
    {
       case 0x81: { sta_inx(Chip); } break;
@@ -308,4 +350,5 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          exit(1);
       } break;
    }
+#endif
 }
