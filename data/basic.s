@@ -34,6 +34,20 @@ STA $00,X   ; 0x95 0x0001=1
 STX $01,Y   ; 0x96 0x0002=1
 STY $02,X   ; 0x94 0x0003=1
 
+LDA $0201,X ; 0xBD A=3
+LDX $0201,Y ; 0xBE X=3
+LDY $01FF,X ; 0xBC Y=3
+LDA $0200,Y ; 0xB9 A=0
+
+; Some setup for indirect ops
+LDA #$BE
+STA $0302
+LDA #$AD
+STA $0204
+LDA #$00
+
+LDA ($02,X) ; 0xA1 A=BE
+LDA ($04),Y ; 0xB1 A=AD
 
 end:
     .dsb $fffa-end,$0

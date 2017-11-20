@@ -98,17 +98,17 @@ InitChip(mos6502* Chip, u8* Rom, u32 RomLen, u16 LoadAddress)
 
 
 #define NextByte Read(Chip, Chip->PC++)
-#define rd16(a,b) (((u16)Chip->Ram[a])<<8|Chip->Ram[b])
+#define rd16(a,b) ((u16)Chip->Ram[a]|((u16)Chip->Ram[b]<<8))
 
 #define AM_imm u16 r=NextByte
 #define AM_a   u16 r=(NextByte|(NextByte)<<8)
 #define AM_zp  u16 r=NextByte
 #define AM_r   u16 r=(((i8)NextByte)+(Chip->PC-1)
-#define AM_ax  u16 r=Chip->Ram[Chip->X+(NextByte|(NextByte)<<8)]
-#define AM_ay  u16 r=Chip->Ram[Chip->Y+(NextByte|(NextByte)<<8)]
+#define AM_ax  u16 r=Chip->X+(NextByte|(NextByte)<<8)
+#define AM_ay  u16 r=Chip->Y+(NextByte|(NextByte)<<8)
 #define AM_zpx u16 r=(Chip->X+NextByte)&0xff
 #define AM_zpy u16 r=(Chip->Y+NextByte)&0xff
-#define AM_ix  u16 b=(Chip->X+NextByte)&0xff; u8 r=Chip->Ram[(((u16)Chip->Ram[b+1])<<8|(u16)Chip->Ram[b])]
+#define AM_ix  u16 b=(Chip->X+NextByte)&0xff; u16 r=(((u16)Chip->Ram[b+1])<<8|(u16)Chip->Ram[b])
 #define AM_iy	u16 i=NextByte; u16 r=rd16(i, (i+1)%0x0100) + Chip->Y;
 
 inline void
@@ -167,8 +167,12 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       */
       case 0xA0: { 
          AM_imm; 
-         Chip->Y=r;              
+         Chip->Y=r;
       } break; // LDY #
+      case 0xA1: { 
+         AM_ix; 
+         Chip->A=Chip->Ram[r];
+      } break; // LDA inx
       case 0xA2: { 
          AM_imm; 
          Chip->X=r;              
@@ -201,13 +205,10 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a; 
          Chip->X=Chip->Ram[r];     
       } break; // LDX a
-      /*      
       case 0xB1: { 
          AM_iy; 
          Chip->A=Chip->Ram[r];    
       } break; // LDA iy
-
-      */
       case 0xB4: { 
          AM_zpx; 
          Chip->Y=Chip->Ram[r];
@@ -220,15 +221,23 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zpy;
          Chip->X=Chip->Ram[r];
       } break; // LDX zpy
-
-
-/*
-      // TODO(scott): finish implementing this
+      case 0xB9: { 
+         AM_ay;
+         Chip->A=Chip->Ram[r];
+      } break; // LDY ay
+      case 0xBC: { 
+         AM_ax;
+         Chip->Y=Chip->Ram[r];
+      } break; // LDY ax
       case 0xBD: { 
-         AM_ax; 
-         Chip->A=Chip->Ram[r];    
+         AM_ax;
+         Chip->A=Chip->Ram[r];
       } break; // LDA ax
-      */
+      case 0xBE: { 
+         AM_ay;
+         Chip->X=Chip->Ram[r];
+      } break; // LDX ay
+
 
       default: {
          fprintf(stderr, "Unimplemented Opcode: %02X\n", Opcode);

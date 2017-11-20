@@ -95,26 +95,26 @@ int main(int ArgCount, char** Args)
    char* Filename = GetFileName(TestRomPath);   
    if (strcmp(Filename, "basic.bin") == 0)
    {
+      //
+      // Load immediate / Store absolute
+      // 
+
       // LDA #$01  { A9 }
       u8 Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);	
       Assert(Chip.A == 1);
-
       // STA $0200
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.Ram[0x0200] == 1);
-
       // LDX #$02
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.X == 2);
-
       // STX $0201
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.Ram[0x0201] == 2);
-
       // LDY #$03
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
@@ -124,6 +124,10 @@ int main(int ArgCount, char** Args)
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.Ram[0x0202] == 3);
+
+      //
+      // Store zero page / Load zero page
+      //
 
       // STA $04
       Op = Chip.Ram[Chip.PC++];
@@ -155,7 +159,9 @@ int main(int ArgCount, char** Args)
       ExecInstruction(&Chip, Op);
       Assert(Chip.Y == 2);
 
+      //
       // Reset the registers
+      //
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Op = Chip.Ram[Chip.PC++];
@@ -165,6 +171,10 @@ int main(int ArgCount, char** Args)
       Assert(Chip.A == 0);
       Assert(Chip.X == 0);
       Assert(Chip.Y == 0);
+
+      //
+      // Load absolute
+      //
 
       // LDA $0200
       Op = Chip.Ram[Chip.PC++];
@@ -181,10 +191,15 @@ int main(int ArgCount, char** Args)
       ExecInstruction(&Chip, Op);
       Assert(Chip.Y == 3);
 
+      // Just resetting here...
       // LDA #$0
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.A == 0);
+
+      //
+      // Load zero page X/Y
+      //
 
       // LDA $02,X
       Op = Chip.Ram[Chip.PC++];
@@ -201,6 +216,10 @@ int main(int ArgCount, char** Args)
       ExecInstruction(&Chip, Op);
       Assert(Chip.Y == 1);
 
+      //
+      // Store zero page X/Y
+      //
+
       // STA $00,X
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
@@ -213,6 +232,60 @@ int main(int ArgCount, char** Args)
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.Ram[0x0003] == 1);
+
+      //
+      // Load absolute X/Y
+      //
+
+      // LDA $0201,X
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 3);
+      // LDX $0201,Y
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.X == 3);
+      // LDA $01FF,X
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Y == 3);
+      // LDA $0200,Y
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0);
+
+      //
+      // Setup for indirect ops
+      //
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0xBE);
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0302] == 0xBE);
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0xAD);
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0204] == 0xAD);
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0x0);
+
+      //
+      // Load indirect/indexed X/Y
+      //
+
+      // LDA ($02,X)
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0xBE);
+
+      // LDA ($04),Y
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0xAD);
    }
    else
    {      
