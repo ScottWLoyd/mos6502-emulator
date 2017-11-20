@@ -49,6 +49,18 @@ LDA #$00
 LDA ($02,X) ; 0xA1 A=BE
 LDA ($04),Y ; 0xB1 A=AD
 
+STA $0205,X ; 0x9D $0208=AD
+STA $0206,Y ; 0x99 $0209=AD
+
+LDA #$DA
+STA ($02,X) ; 0x81 $0302=DA
+STA ($04),Y ; 0x91 $0204=DA
+
+CMP $0209   ; 0xCD $DA-$AD=$2d, Z=0, S=0, C=1
+CMP #$FF    ; 0xC9 $DA-$FF=$DB, Z=0, S=1, C=0
+CMP ($02,X) ; 0xC1 $DA-DA=$0, Z=1, S=0, C=1
+CMP ($04),Y ; 0xD1 $DA-DA=$0, Z=1, S=0, C=1
+
 end:
     .dsb $fffa-end,$0
     .word $1000,$1000,$0
