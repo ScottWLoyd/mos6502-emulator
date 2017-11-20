@@ -18,6 +18,14 @@ typedef float f32;
 
 #include "mos6502.h"
 
+#define DEBUG
+
+#ifdef DEBUG
+#define Assert(X) if(!(X)){ fprintf(stderr, "Assertion failed! line: %d", __LINE__); fflush(stderr); *(int*)0=1;}
+#else
+#define Assert(X)
+#endif
+
 internal u32
 ConvertAddress(char* AddrStr)
 {
@@ -35,6 +43,22 @@ ConvertAddress(char* AddrStr)
       }
    }
    return atoi(AddrStr);
+}
+
+internal char*
+GetFileName(char* Path)
+{   
+   char* C = Path;
+   char* LastSlash = Path;
+   while(*C != 0)
+   {
+      if (*C == '\\')
+      {
+         LastSlash = C + 1; // Skip the slash
+      }
+	  C++;
+   }
+   return LastSlash;
 }
 
 int main(int ArgCount, char** Args)
@@ -67,16 +91,51 @@ int main(int ArgCount, char** Args)
 
    mos6502 Chip = {};
    InitChip(&Chip, Rom, ActualSize, LoadAddress);
-   Chip.PC = LoadAddress;
 
-   while (1)
+   char* Filename = GetFileName(TestRomPath);   
+   if (strcmp(Filename, "basic.bin") == 0)
    {
-      fprintf(stdout, "\nAddr: %04X, Instr: %02X\n", Chip.PC, Chip.Ram[Chip.PC]); 
-      u8 Opcode = Chip.Ram[Chip.PC++];
-      ExecInstruction(&Chip, Opcode);
+      // LDA #$01  { A9 }
+      u8 Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);	
+      Assert(Chip.A == 1);
 
-      fprintf(stdout, "State: {A: %02X, X: %02X, Y: %02X, P: %02X, S: %02X, PC: %04X}\n", 
-         Chip.A, Chip.X, Chip.Y, Chip.P.V, Chip.S, Chip.PC);
+      // STA $0200
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0200] == 1);
+
+      // LDX #$02
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.X == 2);
+
+      // STX $0201
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0201] == 2);
+
+      // LDY #$03
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Y == 3);
+
+      // STY $0202
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0202] == 3);
+   }
+   else
+   {      
+      while (1)
+      {
+         fprintf(stdout, "\nAddr: %04X, Instr: %02X\n", Chip.PC, Chip.Ram[Chip.PC]); 
+         u8 Opcode = Chip.Ram[Chip.PC++];
+         ExecInstruction(&Chip, Opcode);
+
+         fprintf(stdout, "State: {A: %02X, X: %02X, Y: %02X, P: %02X, S: %02X, PC: %04X}\n", 
+            Chip.A, Chip.X, Chip.Y, Chip.P.V, Chip.S, Chip.PC);
+      }
    }
 
    return 0;

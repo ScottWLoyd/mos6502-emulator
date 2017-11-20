@@ -49,7 +49,7 @@ del *.obj > NUL 2> NUL
 popd
 
 
-build\%exe_name% data\AllSuiteA.bin 0x4000
+build\%exe_name% data\basic.bin 0x0000
 
 :end_of_build
 
