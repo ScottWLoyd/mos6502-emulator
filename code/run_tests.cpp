@@ -124,6 +124,95 @@ int main(int ArgCount, char** Args)
       Op = Chip.Ram[Chip.PC++];
       ExecInstruction(&Chip, Op);
       Assert(Chip.Ram[0x0202] == 3);
+
+      // STA $04
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0004] == 1);
+
+      // STX $05
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0005] == 2);
+
+      // STY $06
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0006] == 3);
+
+      // LDA $06
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 3);
+
+      // LDX $04
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.X == 1);
+
+      // LDY $05
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Y == 2);
+
+      // Reset the registers
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0);
+      Assert(Chip.X == 0);
+      Assert(Chip.Y == 0);
+
+      // LDA $0200
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);      
+      Assert(Chip.A == 1);
+
+      // LDX $0201
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.X == 2);
+
+      // LDY $0202
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Y == 3);
+
+      // LDA #$0
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 0);
+
+      // LDA $02,X
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.A == 1);
+
+      // LDX $01,Y
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.X == 1);
+
+      // LDY $03,X
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Y == 1);
+
+      // STA $00,X
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0001] == 1);
+      // STX $00,Y
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0002] == 1);
+      // STY $00,X
+      Op = Chip.Ram[Chip.PC++];
+      ExecInstruction(&Chip, Op);
+      Assert(Chip.Ram[0x0003] == 1);
    }
    else
    {      

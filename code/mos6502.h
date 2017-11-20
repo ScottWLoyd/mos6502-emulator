@@ -102,12 +102,12 @@ InitChip(mos6502* Chip, u8* Rom, u32 RomLen, u16 LoadAddress)
 
 #define AM_imm u16 r=NextByte
 #define AM_a   u16 r=(NextByte|(NextByte)<<8)
-#define AM_zp  u16 r=Chip->Ram[NextByte]
+#define AM_zp  u16 r=NextByte
 #define AM_r   u16 r=(((i8)NextByte)+(Chip->PC-1)
 #define AM_ax  u16 r=Chip->Ram[Chip->X+(NextByte|(NextByte)<<8)]
 #define AM_ay  u16 r=Chip->Ram[Chip->Y+(NextByte|(NextByte)<<8)]
-#define AM_zpx u16 r=Chip->Ram[(Chip->X+NextByte)&0xff]
-#define AM_zpy u16 r=Chip->Ram[(Chip->Y+NextByte)&0xff]
+#define AM_zpx u16 r=(Chip->X+NextByte)&0xff
+#define AM_zpy u16 r=(Chip->Y+NextByte)&0xff
 #define AM_ix  u16 b=(Chip->X+NextByte)&0xff; u8 r=Chip->Ram[(((u16)Chip->Ram[b+1])<<8|(u16)Chip->Ram[b])]
 #define AM_iy	u16 i=NextByte; u16 r=rd16(i, (i+1)%0x0100) + Chip->Y;
 
@@ -118,12 +118,16 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
    {
       case 0x84: { 
          AM_zp; 
-         Chip->Ram[r]=Chip->Y;    
+         Chip->Ram[r]=Chip->Y;
       } break; // STY zp
       case 0x85: { 
          AM_zp; 
-         Chip->Ram[r]=Chip->A;    
+         Chip->Ram[r]=Chip->A;
       } break; // STA zp
+      case 0x86: { 
+         AM_zp; 
+         Chip->Ram[r]=Chip->X;
+      } break; // STX zp
       case 0x8C: { 
          AM_a; 
          Chip->Ram[r]=Chip->Y;     
@@ -136,18 +140,31 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a; 
          Chip->Ram[r]=Chip->X;
       } break; // STX addr
+      /*
       case 0x91: { 
          AM_iy; 
          Chip->Ram[r]=Chip->A;    
-      } break; // STA iy
+      } break; // STA iy  
+      */
+      case 0x94: { 
+         AM_zpx; 
+         Chip->Ram[r]=Chip->Y;
+      } break; // STY zpx
       case 0x95: { 
          AM_zpx; 
-         Chip->Ram[r]=Chip->A;   
+         Chip->Ram[r]=Chip->A;
       } break; // STA zpx
+      case 0x96: { 
+         AM_zpy; 
+         Chip->Ram[r]=Chip->X;
+      } break; // STX zpy
+      /*
       case 0x9D: { 
          AM_ax; 
          Chip->Ram[r]=Chip->A;    
       } break; // STA ax
+
+      */
       case 0xA0: { 
          AM_imm; 
          Chip->Y=r;              
@@ -156,26 +173,54 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_imm; 
          Chip->X=r;              
       } break; // LDX #
+      case 0xA4: { 
+         AM_zp; 
+         Chip->Y=Chip->Ram[r]; 
+      } break; // LDY zp
       case 0xA5: { 
          AM_zp; 
-         Chip->A=r;               
+         Chip->A=Chip->Ram[r]; 
       } break; // LDA zp
+      case 0xA6: { 
+         AM_zp; 
+         Chip->X=Chip->Ram[r]; 
+      } break; // LDX zp
       case 0xA9: { 
          AM_imm; 
          Chip->A=r;              
       } break; // LDA #
+      case 0xAC: { 
+         AM_a; 
+         Chip->Y=Chip->Ram[r];     
+      } break; // LDY a
       case 0xAD: { 
          AM_a; 
          Chip->A=Chip->Ram[r];     
-      } break; // LDA a      
+      } break; // LDA a
+      case 0xAE: { 
+         AM_a; 
+         Chip->X=Chip->Ram[r];     
+      } break; // LDX a
+      /*      
       case 0xB1: { 
          AM_iy; 
          Chip->A=Chip->Ram[r];    
       } break; // LDA iy
+
+      */
+      case 0xB4: { 
+         AM_zpx; 
+         Chip->Y=Chip->Ram[r];
+      } break; // LDY zpx
       case 0xB5: { 
          AM_zpx; 
-         Chip->A=Chip->Ram[r];   
+         Chip->A=Chip->Ram[r];
       } break; // LDA zpx
+      case 0xB6: { 
+         AM_zpy;
+         Chip->X=Chip->Ram[r];
+      } break; // LDX zpy
+
 
 /*
       // TODO(scott): finish implementing this
@@ -191,46 +236,4 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       } break;
    }
 
-#if 0
-   switch(Opcode)
-   {
-      case 0x81: { sta_inx(Chip); } break;
-      case 0x84: { sty_zp(Chip);  } break;
-      case 0x85: { sta_zp(Chip);  } break;      
-      case 0x86: { stx_zp(Chip);  } break;
-      case 0x8C: { sty_abs(Chip); } break;
-      case 0x8D: { sta_abs(Chip); } break;
-      case 0x8E: { stx_abs(Chip); } break;
-      case 0x91: { sta_iny(Chip); } break;
-      case 0x94: { sty_zpx(Chip); } break;
-      case 0x95: { sta_zpx(Chip); } break;
-      case 0x96: { stx_zpy(Chip); } break;
-      case 0x99: { sta_aby(Chip); } break;
-      case 0x9D: { sta_abx(Chip); } break;
-      case 0xA0: { ldy_imm(Chip); } break;
-      case 0xA1: { lda_inx(Chip); } break;
-      case 0xA2: { ldx_imm(Chip); } break;
-      case 0xA4: { ldy_zp(Chip);  } break;
-      case 0xA5: { lda_zp(Chip);  } break;
-      case 0xA6: { ldx_zp(Chip);  } break;
-      case 0xA9: { lda_imm(Chip); } break;
-      case 0xAC: { ldy_abs(Chip); } break;
-      case 0xAD: { lda_abs(Chip); } break;
-      case 0xAE: { ldx_abs(Chip); } break;
-      case 0xB1: { lda_iny(Chip); } break;
-      case 0xB4: { ldy_zpx(Chip); } break;
-      case 0xB5: { lda_zpx(Chip); } break;
-      case 0xB6: { ldx_zpy(Chip); } break;
-      case 0xB9: { lda_aby(Chip); } break;      
-      case 0xBC: { ldy_abx(Chip); } break;     
-      case 0xBD: { lda_abx(Chip); } break;
-      case 0xBE: { ldx_aby(Chip); } break;
-      case 0xCD: { cmp_abs(Chip); } break;
-      case 0xF0: { beq(Chip);     } break;
-      default: {
-         fprintf(stderr, "Unimplemented Opcode: %02X\n", Opcode);
-         exit(1);
-      } break;
-   }
-#endif
 }
