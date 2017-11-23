@@ -57,12 +57,12 @@ u16 InterruptVectors[3][2] =
    {0xFFFE, 0xFFFF}, // IRQ
 };
 
-inline u16
-Read(mos6502* Chip, u16 Addr)
-{
-   u16 Result = Chip->Ram[Addr];
-   return Result;
-}
+//
+// User should supply the Read() and Write() functions.
+// Allows the usage of various memory mappers.
+//
+u16 Read(mos6502* Chip, u16 Addr);
+void Write(mos6502* Chip, u16 Addr, u8 Value);
 
 inline u16
 ReadAddress(mos6502* Chip, u16 Addr)
@@ -95,13 +95,13 @@ inline void
 Cmp(mos6502* Chip, u8 V)
 {
    Chip->P.C = (Chip->A >= V);
-   Chip->P.S = (Chip->A < V);
+   Chip->P.S = (Chip->A - V) >> 7;
    Chip->P.Z = (V == Chip->A);
 }
 
 
 #define NextByte Read(Chip, Chip->PC++)
-#define rd16(a,b) ((u16)Chip->Ram[a]|((u16)Chip->Ram[b]<<8))
+#define rd16(a,b) (Read(Chip, a)|(Read(Chip, b)<<8))
 
 #define AM_imm u16 r=NextByte
 #define AM_a   u16 r=(NextByte|(NextByte)<<8)
@@ -111,7 +111,7 @@ Cmp(mos6502* Chip, u8 V)
 #define AM_ay  u16 r=Chip->Y+(NextByte|(NextByte)<<8)
 #define AM_zpx u16 r=(Chip->X+NextByte)&0xff
 #define AM_zpy u16 r=(Chip->Y+NextByte)&0xff
-#define AM_ix  u16 b=(Chip->X+NextByte)&0xff; u16 r=(((u16)Chip->Ram[b+1])<<8|(u16)Chip->Ram[b])
+#define AM_ix  u16 b=(Chip->X+NextByte)&0xff; u16 r=rd16(b, b+1)
 #define AM_iy	u16 i=NextByte; u16 r=rd16(i, (i+1)%0x0100) + Chip->Y;
 
 inline void
@@ -247,6 +247,10 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_ix;
          Cmp(Chip, Chip->Ram[r]);
       } break; // CMP ix
+      case 0xC5: {
+         AM_zp;
+         Cmp(Chip, Chip->Ram[r]);
+      } break; // CMP zp
       case 0xC9: {
          AM_imm;
          Cmp(Chip, r);
@@ -259,6 +263,18 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_iy;
          Cmp(Chip, Chip->Ram[r]);
       } break; // CMP iy
+      case 0xD5: {
+         AM_zpx;
+         Cmp(Chip, Chip->Ram[r]);
+      } break; // CMP zpx
+      case 0xD9: {
+         AM_ay;
+         Cmp(Chip, Chip->Ram[r]);
+      } break; // CMP ay
+      case 0xDD: {
+         AM_ax;
+         Cmp(Chip, Chip->Ram[r]);
+      } break; // CMP ax
 
 
       default: {

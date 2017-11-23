@@ -61,6 +61,13 @@ GetFileName(char* Path)
    return LastSlash;
 }
 
+inline u16
+Read(mos6502* Chip, u16 Addr)
+{
+   u16 Result = Chip->Ram[Addr];
+   return Result;
+}
+
 int main(int ArgCount, char** Args)
 {
    if (3 != ArgCount)

@@ -266,3 +266,46 @@ Assert(Chip.Y == 0x03);
 Assert(Chip.P.Z == 1);
 Assert(Chip.P.S == 0);
 Assert(Chip.P.C == 1);
+
+// CMP $0205,X 
+// $DD-$AD=$2d, Z=0, S=0, C=1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xDA);
+Assert(Chip.X == 0x03);
+Assert(Chip.Ram[0x0208] == 0xAD);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+
+// CMP $0205,Y 
+// $DD-$AD=$2d, Z=0, S=0, C=1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xDA);
+Assert(Chip.Y == 0x03);
+Assert(Chip.Ram[0x0208] == 0xAD);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+
+// CMP $06     
+// $DA-$03=$D7, Z=0, S=0, C=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xDA);
+Assert(Chip.Ram[0x06] == 0x03);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 1);
+
+// CMP $03,X
+// $DA-$03=$D7, Z=0, S=0, C=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xDA);
+Assert(Chip.Ram[0x06] == 0x03);
+Assert(Chip.X == 0x03);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 1);

@@ -60,6 +60,10 @@ CMP $0209   ; 0xCD $DA-$AD=$2d, Z=0, S=0, C=1
 CMP #$FF    ; 0xC9 $DA-$FF=$DB, Z=0, S=1, C=0
 CMP ($02,X) ; 0xC1 $DA-DA=$0, Z=1, S=0, C=1
 CMP ($04),Y ; 0xD1 $DA-DA=$0, Z=1, S=0, C=1
+CMP $0205,X ; 0xDD $DA-$AD=$2d, Z=0, S=0, C=1
+CMP $0205,Y ; 0xD9 $DA-$AD=$2d, Z=0, S=0, C=1
+CMP $06     ; 0xC5 $DA-$03=$D7, Z=0, S=1, C=0
+CMP $03,X   ; 0xD5 $DA-$03=$D7, Z=0, S=1, C=0
 
 end:
     .dsb $fffa-end,$0
