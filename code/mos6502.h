@@ -12,6 +12,7 @@
 #define KB(X) ((X)*1024)
 
 // TODO(scott): Implement and test decimal mode
+// Reference simulator: https://skilldrick.github.io/easy6502/
 
 #pragma pack(push, 1)
 union status_flags_type
