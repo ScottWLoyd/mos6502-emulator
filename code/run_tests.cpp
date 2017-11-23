@@ -21,7 +21,7 @@ typedef float f32;
 #define DEBUG
 
 #ifdef DEBUG
-#define Assert(X) if(!(X)){ fprintf(stderr, "Assertion failed! line: %d", __LINE__); fflush(stderr); *(int*)0=1;}
+#define Assert(X) if(!(X)){ fprintf(stderr, "Assertion failed! line: %d\n", __LINE__); fflush(stderr); *(int*)0=1;}
 #else
 #define Assert(X)
 #endif
@@ -68,6 +68,12 @@ Read(mos6502* Chip, u16 Addr)
    return Result;
 }
 
+inline void 
+Write(mos6502* Chip, u16 Addr, u8 Value)
+{
+   Chip->Ram[Addr] = Value;
+}
+
 int main(int ArgCount, char** Args)
 {
    if (3 != ArgCount)
@@ -111,7 +117,7 @@ int main(int ArgCount, char** Args)
          ExecInstruction(&Chip, Opcode);
 
          fprintf(stdout, "State: {A: %02X, X: %02X, Y: %02X, P: %02X, S: %02X, PC: %04X}\n", 
-            Chip.A, Chip.X, Chip.Y, Chip.P.V, Chip.S, Chip.PC);
+            Chip.A, Chip.X, Chip.Y, Chip.P.O, Chip.S, Chip.PC);
       }
    }
 

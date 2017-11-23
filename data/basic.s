@@ -65,6 +65,25 @@ CMP $0205,Y ; 0xD9 $DA-$AD=$2d, Z=0, S=0, C=1
 CMP $06     ; 0xC5 $DA-$03=$D7, Z=0, S=1, C=0
 CMP $03,X   ; 0xD5 $DA-$03=$D7, Z=0, S=1, C=0
 
+; Setup for arithmatic tests
+LDY #$DF    ; Y = $DF
+STY $0A     ; $0A=$DF
+LDY #$AB    ; Y = $AB
+STY $10     ; $10 = $AB
+LDY #$44    ; Y = $44
+STY $11     ; $11 = $44
+LDY #$55    ; Y = $55
+STY $4500   ; $4500 = $55
+
+ADC #$44    ; 0x69 $DA+$44+(C=1)=1F, C=1,S=0,Z=0,O=0
+ADC $06     ; 0x65 $1F+$03+(C=1)=$23, C=0,S=0,Z=0,O=0
+ADC $03,X   ; 0x75 $23+$03+(C=0)=$26, C=0,S=0,Z=0,O=0
+ADC $4500   ; 0x6D $26+$55+(C=0)=$7B, C=0,S=0,Z=0,O=0
+ADC $44FD,X ; 0x7D $7B+$55+(C=0)=$D0, C=0,S=1,Z=0,O=1
+ADC $44AB,Y ; 0x79 $D0+$55+(C=0)=$25, C=1,S=0,Z=0,O=0
+ADC ($03,X) ; 0x61 $25+$01+(C=1)=$27, C=0,S=0,Z=0,O=0
+ADC ($10),Y ; 0x71 $27+$55+(C=0)=$7C, C=0,S=0,Z=0,O=0
+
 end:
     .dsb $fffa-end,$0
     .word $1000,$1000,$0

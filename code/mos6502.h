@@ -11,6 +11,8 @@
 
 #define KB(X) ((X)*1024)
 
+// TODO(scott): Implement and test decimal mode
+
 #pragma pack(push, 1)
 union status_flags_type
 {
@@ -20,11 +22,11 @@ union status_flags_type
       u8 Z      : 1;
       u8 IntDisable : 1;
       u8 D      : 1;
-      u8 Spare      : 2;
+      u8 Spare  : 2;
       u8 O      : 1;
       u8 S      : 1;
    };
-   u8 V;
+   u8 Value;
 };
 #pragma pack(pop)
 
@@ -92,6 +94,27 @@ InitChip(mos6502* Chip, u8* Rom, u32 RomLen, u16 LoadAddress)
 
 
 inline void
+Add(mos6502* Chip, u8 V)
+{
+   u16 Result = Chip->A + Chip->P.C + V;
+   // TODO(scott): Implement decimal here
+   // if(Chip->P.D)
+   //{
+   //
+   //}
+   //else
+   {
+      //Chip->P.V = ((Chip->A ^ Result) & (V ^ Result) & 0x80) == 0x80 ? 1 : 0;
+      Chip->P.O = (~(Chip->A^V) & (Chip->A^Result) & 0x80) >> 7;
+      Chip->P.C = (Result > 0xFF);
+      Chip->P.Z = (Result == 0);
+      Chip->P.S = (Result >> 7) & 0x1;
+   }
+   Chip->A = (Result & 0xFF);
+}
+
+
+inline void
 Cmp(mos6502* Chip, u8 V)
 {
    Chip->P.C = (Chip->A >= V);
@@ -119,57 +142,89 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
 {
    switch(Opcode)
    {
+      case 0x61: {
+         AM_ix;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC ix
+      case 0x65: {
+         AM_zp;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC zp
+      case 0x69: {
+         AM_imm;
+         Add(Chip, r);
+      } break; // ADC imm
+      case 0x6D: {
+         AM_a;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC abs
+      case 0x71: {
+         AM_iy;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC iy
+      case 0x75: {
+         AM_zpx;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC zpx
+      case 0x79: {
+         AM_ay;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC zpy
+      case 0x7D: {
+         AM_ax;
+         Add(Chip, Read(Chip, r));
+      } break; // ADC zpx
       case 0x81: {
          AM_ix;
-         Chip->Ram[r]=Chip->A;
+         Write(Chip, r, Chip->A);
       } break; // STA ix
       case 0x84: { 
          AM_zp; 
-         Chip->Ram[r]=Chip->Y;
+         Write(Chip, r, Chip->Y);
       } break; // STY zp
       case 0x85: { 
          AM_zp; 
-         Chip->Ram[r]=Chip->A;
+         Write(Chip, r, Chip->A);
       } break; // STA zp
       case 0x86: { 
          AM_zp; 
-         Chip->Ram[r]=Chip->X;
+         Write(Chip, r, Chip->X);
       } break; // STX zp
       case 0x8C: { 
          AM_a; 
-         Chip->Ram[r]=Chip->Y;     
+         Write(Chip, r, Chip->Y);     
       } break; // STY addr
       case 0x8D: { 
          AM_a; 
-         Chip->Ram[r]=Chip->A;     
+         Write(Chip, r, Chip->A);     
       } break; // STA addr
       case 0x8E: { 
          AM_a; 
-         Chip->Ram[r]=Chip->X;
+         Write(Chip, r, Chip->X);
       } break; // STX addr
       case 0x91: { 
          AM_iy;
-         Chip->Ram[r]=Chip->A;
+         Write(Chip, r, Chip->A);
       } break; // STA iy
       case 0x94: { 
          AM_zpx; 
-         Chip->Ram[r]=Chip->Y;
+         Write(Chip, r, Chip->Y);
       } break; // STY zpx
       case 0x95: { 
          AM_zpx; 
-         Chip->Ram[r]=Chip->A;
+         Write(Chip, r, Chip->A);
       } break; // STA zpx
       case 0x96: { 
          AM_zpy; 
-         Chip->Ram[r]=Chip->X;
+         Write(Chip, r, Chip->X);
       } break; // STX zpy
       case 0x99: { 
          AM_ax; 
-         Chip->Ram[r]=Chip->A;    
+         Write(Chip, r, Chip->A);    
       } break; // STA ay
       case 0x9D: { 
          AM_ax; 
-         Chip->Ram[r]=Chip->A;    
+         Write(Chip, r, Chip->A);    
       } break; // STA ax
       case 0xA0: { 
          AM_imm; 
@@ -177,7 +232,7 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       } break; // LDY #
       case 0xA1: { 
          AM_ix; 
-         Chip->A=Chip->Ram[r];
+         Chip->A=Read(Chip, r);
       } break; // LDA inx
       case 0xA2: { 
          AM_imm; 
@@ -185,15 +240,15 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       } break; // LDX #
       case 0xA4: { 
          AM_zp; 
-         Chip->Y=Chip->Ram[r]; 
+         Chip->Y=Read(Chip, r); 
       } break; // LDY zp
       case 0xA5: { 
          AM_zp; 
-         Chip->A=Chip->Ram[r]; 
+         Chip->A=Read(Chip, r); 
       } break; // LDA zp
       case 0xA6: { 
          AM_zp; 
-         Chip->X=Chip->Ram[r]; 
+         Chip->X=Read(Chip, r); 
       } break; // LDX zp
       case 0xA9: { 
          AM_imm; 
@@ -201,55 +256,55 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       } break; // LDA #
       case 0xAC: { 
          AM_a; 
-         Chip->Y=Chip->Ram[r];     
+         Chip->Y=Read(Chip, r);     
       } break; // LDY a
       case 0xAD: { 
          AM_a; 
-         Chip->A=Chip->Ram[r];     
+         Chip->A=Read(Chip, r);     
       } break; // LDA a
       case 0xAE: { 
          AM_a; 
-         Chip->X=Chip->Ram[r];     
+         Chip->X=Read(Chip, r);     
       } break; // LDX a
       case 0xB1: { 
          AM_iy; 
-         Chip->A=Chip->Ram[r];    
+         Chip->A=Read(Chip, r);    
       } break; // LDA iy
       case 0xB4: { 
          AM_zpx; 
-         Chip->Y=Chip->Ram[r];
+         Chip->Y=Read(Chip, r);
       } break; // LDY zpx
       case 0xB5: { 
          AM_zpx; 
-         Chip->A=Chip->Ram[r];
+         Chip->A=Read(Chip, r);
       } break; // LDA zpx
       case 0xB6: { 
          AM_zpy;
-         Chip->X=Chip->Ram[r];
+         Chip->X=Read(Chip, r);
       } break; // LDX zpy
       case 0xB9: { 
          AM_ay;
-         Chip->A=Chip->Ram[r];
+         Chip->A=Read(Chip, r);
       } break; // LDY ay
       case 0xBC: { 
          AM_ax;
-         Chip->Y=Chip->Ram[r];
+         Chip->Y=Read(Chip, r);
       } break; // LDY ax
       case 0xBD: { 
          AM_ax;
-         Chip->A=Chip->Ram[r];
+         Chip->A=Read(Chip, r);
       } break; // LDA ax
       case 0xBE: { 
          AM_ay;
-         Chip->X=Chip->Ram[r];
+         Chip->X=Read(Chip, r);
       } break; // LDX ay
       case 0xC1: {
          AM_ix;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP ix
       case 0xC5: {
          AM_zp;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP zp
       case 0xC9: {
          AM_imm;
@@ -257,23 +312,23 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       } break; // CMP imm
       case 0xCD: {
          AM_a;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP abs
       case 0xD1: {
          AM_iy;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP iy
       case 0xD5: {
          AM_zpx;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP zpx
       case 0xD9: {
          AM_ay;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP ay
       case 0xDD: {
          AM_ax;
-         Cmp(Chip, Chip->Ram[r]);
+         Cmp(Chip, Read(Chip, r));
       } break; // CMP ax
 
 

@@ -309,3 +309,131 @@ Assert(Chip.X == 0x03);
 Assert(Chip.P.Z == 0);
 Assert(Chip.P.S == 1);
 Assert(Chip.P.C == 1);
+
+//
+// Setup for aritmatic tests
+//
+
+// LDY #$DF    ; Y = $DF
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// STY $0A     ; $0A=$DF
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.Y == 0xDF);
+Assert(Chip.Ram[0x0A] == 0xDF);
+
+// LDY #$AB    ; Y = $AB
+// STY $10     ; $10 = $AB
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// LDY #$44    ; Y = $44
+// STY $11     ; $11 = $44
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// LDY #$55    ; Y = $55
+// STY $4500   ; $4500 = $55
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.Y == 0x55);
+Assert(Chip.Ram[0x4500] == 0x55);
+
+//
+// ADC tests
+//
+
+// ADC #$44    
+// 0x69 $DA+$44=$1E, C=1 -> $1F
+Assert(Chip.A == 0xDA);
+Assert(Chip.P.C == 1);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x1F);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// ADC $06     
+// $1F+$03+(C=1)=23, C=0,S=0,Z=0,O=0
+Assert(Chip.A == 0x1F);
+Assert(Chip.P.C == 1);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x23);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// ADC $03,X   
+// $23+$03+(C=0)=$26, C=0,S=0,Z=0,O=0
+Assert(Chip.A == 0x23);
+Assert(Chip.P.C == 0);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x26);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// ADC $4500
+// $26+$55+(C=0)=$7B, C=0,S=0,Z=0,O=0
+Assert(Chip.A == 0x26);
+Assert(Chip.P.C == 0);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x7B);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// ADC $44FD,X 
+// $7B+$55+(C=0)=D0, C=0,S=1,Z=0,O=1
+Assert(Chip.X == 0x03);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xD0);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 1);
+
+// ADC $44AB,Y 
+// $D0+$55+(C=0)=25, C=1,S=0,Z=0,O=0
+Assert(Chip.Y == 0x55);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x25);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// ADC ($03,X) 
+// $25+$01+(C=1)=$27, C=0,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x27);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// ADC ($B1),Y 
+// $27+$55+(C=0)=$7C, C=0,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x7C);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
