@@ -140,6 +140,16 @@ And(mos6502* Chip, u8 V)
 }
 
 inline void
+Asl(mos6502* Chip, u16 Addr)
+{
+   u8 V = Read(Chip, Addr);
+   Chip->P.C = (V & 0x80) >> 7;
+   V = (V << 1);
+   SetSZ(V);
+   Write(Chip, Addr, V);
+}
+
+inline void
 Cmp(mos6502* Chip, u8 V)
 {   
    Chip->P.C = (Chip->A >= V);
@@ -151,10 +161,39 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
 {
    switch(Opcode)
    {
+      case 0x06: {
+         AM_zp;
+         Asl(Chip, r);
+      } break; // ASL zp
+      case 0x0A: {
+         Chip->P.C = (Chip->A & 0x8) >> 7;
+         Chip->A = (Chip->A << 1);
+         Chip->P.S = (Chip->A & 0x8) >> 7;
+         Chip->P.Z = (Chip->A == 0);
+      } break; // ASL A
+      case 0x0E: {
+         AM_a;
+         Asl(Chip, r);
+      } break; // ASL abs
+      case 0x16: {
+         AM_zpx;
+         Asl(Chip, r);
+      } break; // ASL zpx
+      case 0x1E: {
+         AM_ax;
+         Asl(Chip, r);
+      } break; // ASL ax
       case 0x21: {
          AM_ix;
          And(Chip, Read(Chip, r));
       } break; // AND ix
+      case 0x24: {
+         AM_zp;
+         u8 V = Read(Chip, r);
+         Chip->P.Z = ((Chip->A & V) == 0);
+         Chip->P.S = (V & 0x80) >> 7;
+         Chip->P.O = (V & 0x40) >> 6;
+      } break; // BIT zp
       case 0x25: {
          AM_zp;
          And(Chip, Read(Chip, r));
@@ -163,6 +202,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_imm;
          And(Chip, r);
       } break; // AND imm
+      case 0x2C: {
+         AM_a;
+         u8 V = Read(Chip, r);
+         Chip->P.Z = ((Chip->A & V) == 0);
+         Chip->P.S = (V & 0x80) >> 7;
+         Chip->P.O = (V & 0x40) >> 6;
+      } break; // BIT abs
       case 0x2D: {
          AM_a;
          And(Chip, Read(Chip, r));

@@ -573,3 +573,57 @@ ExecInstruction(&Chip, Op);
 Assert(Chip.A == 0x01);
 Assert(Chip.P.S == 0);
 Assert(Chip.P.C == 0);
+
+// ASL         ; A=$02
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x02);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+
+// ASL $01     ; $01=$02
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.Ram[0x01] == 0x02);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+
+// ASL $01,X   ; $04=$02
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.Ram[0x04] == 0x02);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+
+// ASL $0201   ; $0201=$04
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.Ram[0x0201] == 0x04);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+
+// ASL $0201,X ; $0204=$B4, C=1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.Ram[0x0204] == 0xB4);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+
+// BIT $0A     ; Z=0,S=1,O=1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.O == 1);
+Assert(Chip.P.Z == 0);
+
+// BIT $0201   ; Z=1,N=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.O == 0);
+Assert(Chip.P.Z == 1);
