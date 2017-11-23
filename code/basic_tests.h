@@ -437,3 +437,83 @@ Assert(Chip.P.S == 0);
 Assert(Chip.P.C == 0);
 Assert(Chip.P.Z == 0);
 Assert(Chip.P.O == 0);
+
+// SBC ($10),Y
+// $7C-$55+(C=0)=$26, C=0,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x26);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// SBC ($03,X)
+// $26-$01+(C=1)-1=$25, C=1,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x25);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// SBC $44AB,Y 
+// $25-$55+(C=1)-1=$D0, C=0,S=1,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xD0);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// SBC $44FD,X ;  
+// $D0-$55+(C=0)-1=$7A, C=1,S=0,Z=0,O=1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x7A);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 1);
+
+// SBC $4500   
+// $7A-$55+(C=1)-1=$25, C=1,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x25);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// SBC $03,X
+// $25-$03+(C=1)-1=$22, C=1,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x22);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// SBC $06
+// $22-$03+(C=1)-1=$1f, C=1,S=0,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x1F);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 1);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);
+
+// SBC #$44    
+// $1f-$44+(C=1)-1=$DB, C=0,S=1,Z=0,O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xDB);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+Assert(Chip.P.Z == 0);
+Assert(Chip.P.O == 0);

@@ -330,6 +330,38 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_ax;
          Cmp(Chip, Read(Chip, r));
       } break; // CMP ax
+      case 0xE1: {
+         AM_ix;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC ix
+      case 0xE5: {
+         AM_zp;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC zp
+      case 0xE9: {
+         AM_imm;
+         Add(Chip, ~r);
+      } break; // SBC abs
+      case 0xED: {
+         AM_a;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC abs
+      case 0xF1: {
+         AM_iy;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC iy
+      case 0xF5: {
+         AM_zpx;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC zpx
+      case 0xF9: {
+         AM_ay;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC ay
+      case 0xFD: {
+         AM_ax;
+         Add(Chip, ~Read(Chip, r));
+      } break; // SBC ax
 
 
       default: {
