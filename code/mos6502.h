@@ -94,34 +94,8 @@ InitChip(mos6502* Chip, u8* Rom, u32 RomLen, u16 LoadAddress)
 }
 
 
-inline void
-Add(mos6502* Chip, u8 V)
-{
-   u16 Result = Chip->A + Chip->P.C + V;
-   // TODO(scott): Implement decimal here
-   // if(Chip->P.D)
-   //{
-   //
-   //}
-   //else
-   {
-      //Chip->P.V = ((Chip->A ^ Result) & (V ^ Result) & 0x80) == 0x80 ? 1 : 0;
-      Chip->P.O = (~(Chip->A^V) & (Chip->A^Result) & 0x80) >> 7;
-      Chip->P.C = (Result > 0xFF);
-      Chip->P.Z = (Result == 0);
-      Chip->P.S = (Result >> 7) & 0x1;
-   }
-   Chip->A = (Result & 0xFF);
-}
-
-
-inline void
-Cmp(mos6502* Chip, u8 V)
-{
-   Chip->P.C = (Chip->A >= V);
-   Chip->P.S = (Chip->A - V) >> 7;
-   Chip->P.Z = (V == Chip->A);
-}
+#define SetSZ(v) Chip->P.S=(v>>7)&1; Chip->P.Z=(v==0)
+#define LD(r,v) *r=v; SetSZ(v)
 
 
 #define NextByte Read(Chip, Chip->PC++)
@@ -138,11 +112,77 @@ Cmp(mos6502* Chip, u8 V)
 #define AM_ix  u16 b=(Chip->X+NextByte)&0xff; u16 r=rd16(b, b+1)
 #define AM_iy	u16 i=NextByte; u16 r=rd16(i, (i+1)%0x0100) + Chip->Y;
 
+
+inline void
+Add(mos6502* Chip, u8 V)
+{
+   u16 Result = Chip->A + Chip->P.C + V;
+   // TODO(scott): Implement decimal here
+   // if(Chip->P.D)
+   //{
+   //
+   //}
+   //else
+   {
+      //Chip->P.V = ((Chip->A ^ Result) & (V ^ Result) & 0x80) == 0x80 ? 1 : 0;
+      Chip->P.O = (~(Chip->A^V) & (Chip->A^Result) & 0x80) >> 7;
+      Chip->P.C = (Result > 0xFF);
+      SetSZ(Result);
+   }
+   Chip->A = (Result & 0xFF);
+}
+
+inline void
+And(mos6502* Chip, u8 V)
+{
+   Chip->A = Chip->A & V;
+   SetSZ(Chip->A);
+}
+
+inline void
+Cmp(mos6502* Chip, u8 V)
+{   
+   Chip->P.C = (Chip->A >= V);
+   SetSZ(Chip->A - V);
+}
+
 inline void
 ExecInstruction(mos6502* Chip, u8 Opcode)
 {
    switch(Opcode)
    {
+      case 0x21: {
+         AM_ix;
+         And(Chip, Read(Chip, r));
+      } break; // AND ix
+      case 0x25: {
+         AM_zp;
+         And(Chip, Read(Chip, r));
+      } break; // AND zp
+      case 0x29: {
+         AM_imm;
+         And(Chip, r);
+      } break; // AND imm
+      case 0x2D: {
+         AM_a;
+         And(Chip, Read(Chip, r));
+      } break; // AND abs
+      case 0x31: {
+         AM_iy;
+         And(Chip, Read(Chip, r));
+      } break; // AND iy
+      case 0x35: {
+         AM_zpx;
+         And(Chip, Read(Chip, r));
+      } break;
+      case 0x3D: {
+         AM_ax;
+         And(Chip, Read(Chip, r));
+      } break; // AND ax
+      case 0x39: {
+         AM_ay;
+         And(Chip, Read(Chip, r));
+      } break; // AND ay
       case 0x61: {
          AM_ix;
          Add(Chip, Read(Chip, r));
@@ -229,75 +269,75 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       } break; // STA ax
       case 0xA0: { 
          AM_imm; 
-         Chip->Y=r;
+         LD(&Chip->Y, r);
       } break; // LDY #
       case 0xA1: { 
          AM_ix; 
-         Chip->A=Read(Chip, r);
+         LD(&Chip->A,Read(Chip, r));
       } break; // LDA inx
       case 0xA2: { 
          AM_imm; 
-         Chip->X=r;              
+         LD(&Chip->X,r);
       } break; // LDX #
       case 0xA4: { 
          AM_zp; 
-         Chip->Y=Read(Chip, r); 
+         LD(&Chip->Y,Read(Chip, r)); 
       } break; // LDY zp
       case 0xA5: { 
          AM_zp; 
-         Chip->A=Read(Chip, r); 
+         LD(&Chip->A,Read(Chip, r)); 
       } break; // LDA zp
       case 0xA6: { 
          AM_zp; 
-         Chip->X=Read(Chip, r); 
+         LD(&Chip->X,Read(Chip, r)); 
       } break; // LDX zp
       case 0xA9: { 
          AM_imm; 
-         Chip->A=r;              
+         LD(&Chip->A,r);            
       } break; // LDA #
       case 0xAC: { 
          AM_a; 
-         Chip->Y=Read(Chip, r);     
+         LD(&Chip->Y,Read(Chip, r));
       } break; // LDY a
       case 0xAD: { 
          AM_a; 
-         Chip->A=Read(Chip, r);     
+         LD(&Chip->A,Read(Chip, r)); 
       } break; // LDA a
       case 0xAE: { 
          AM_a; 
-         Chip->X=Read(Chip, r);     
+         LD(&Chip->X,Read(Chip, r));
       } break; // LDX a
       case 0xB1: { 
          AM_iy; 
-         Chip->A=Read(Chip, r);    
-      } break; // LDA iy
-      case 0xB4: { 
+         LD(&Chip->A,Read(Chip, r));
+      } break; // LD(&LDA i,
+      case 0xB4: {
          AM_zpx; 
-         Chip->Y=Read(Chip, r);
+         LD(&Chip->Y,Read(Chip, r));
       } break; // LDY zpx
       case 0xB5: { 
          AM_zpx; 
-         Chip->A=Read(Chip, r);
+         LD(&Chip->A,Read(Chip, r));
       } break; // LDA zpx
       case 0xB6: { 
          AM_zpy;
-         Chip->X=Read(Chip, r);
+         LD(&Chip->X,Read(Chip, r));
       } break; // LDX zpy
       case 0xB9: { 
          AM_ay;
-         Chip->A=Read(Chip, r);
+         LD(&Chip->A,Read(Chip, r));
       } break; // LDY ay
       case 0xBC: { 
          AM_ax;
-         Chip->Y=Read(Chip, r);
+         LD(&Chip->Y,Read(Chip, r));
       } break; // LDY ax
       case 0xBD: { 
          AM_ax;
-         Chip->A=Read(Chip, r);
+         LD(&Chip->A,Read(Chip, r));
       } break; // LDA ax
       case 0xBE: { 
          AM_ay;
-         Chip->X=Read(Chip, r);
+         LD(&Chip->X,Read(Chip, r));
       } break; // LDX ay
       case 0xC1: {
          AM_ix;

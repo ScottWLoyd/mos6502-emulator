@@ -517,3 +517,59 @@ Assert(Chip.P.S == 1);
 Assert(Chip.P.C == 0);
 Assert(Chip.P.Z == 0);
 Assert(Chip.P.O == 0);
+
+// AND #$ff    ; $DB&$FF=$DB, S=1,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xDB);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.Z == 0);
+
+// AND $10     ; $DB&$AB=$8B, S=1,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x8B);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+
+// AND $0E     ; $8B&$FF=$8B, S=1,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x8B);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+
+// AND $0208   ; $8B&$AD=$89, S=1,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x89);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+
+// AND $0205,X ; $89&$AD=$89, S=1,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x89);
+Assert(Chip.P.S == 1);
+Assert(Chip.P.C == 0);
+
+// AND $01AD,Y ; $89&$03=$01, S=0,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x01);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+
+// AND ($03,X) ; $01&$01=$01, S=0,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x01);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
+
+// AND ($10),Y ; $01&$01=$01, S=0,Z=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x01);
+Assert(Chip.P.S == 0);
+Assert(Chip.P.C == 0);
