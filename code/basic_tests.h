@@ -627,3 +627,250 @@ ExecInstruction(&Chip, Op);
 Assert(Chip.P.S == 0);
 Assert(Chip.P.O == 0);
 Assert(Chip.P.Z == 1);
+
+//
+// Branching Tests
+//
+
+// SEC
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 1);
+// LDA #$02
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 2);
+// decrement: SBC #$01
+u16 DecrementAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 1);
+Assert(Chip.P.S == 0);
+// BPL decrement 
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == DecrementAddr);
+// decrement: SBC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0);
+Assert(Chip.P.S == 0);
+// BPL decrement 
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == DecrementAddr);
+// decrement: SBC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xFF);
+Assert(Chip.P.S == 1);
+// BPL decrement 
+u16 TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// compare: CMP #$FF
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.Z == 1);
+// BEQ decrement
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == DecrementAddr);
+// decrement: SBC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xFE);
+Assert(Chip.P.S == 1);
+// BPL decrement 
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// compare: CMP #$FF
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.Z == 0);
+// BEQ decrement
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// BMI increment
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// increment: CLC
+u16 IncAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// ADC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xFF);
+// CMP #$00
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.Z == 0);
+// BNE increment
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == IncAddr);
+// increment: CLC
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// ADC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0);
+// CMP #$00
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.Z == 1);
+// BNE increment
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+
+// LDA #$7F ; A=$7F=(127)
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x7F);
+// tp1: CLC
+u16 tp1_Addr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// ADC #$01 ; A=$80=(128), O=1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x80);
+Assert(Chip.P.O == 1);
+// BVS tp1
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == tp1_Addr);
+// tp1: CLC
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// ADC #$01 ; A=$81=(129), O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x81);
+Assert(Chip.P.O == 0);
+// BVS tp1
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// tp2: CLC
+u16 tp2_Addr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// ADC #$FF ; A=(-128), O=0
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x80);
+Assert(Chip.P.O == 0);
+// BVC tp2
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == tp2_Addr);
+// tp2: CLC
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// ADC #$FF ;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x7F);
+Assert(Chip.P.O == 1);
+// BVC tp2
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// CLV
+Assert(Chip.P.O == 1);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.O == 0);
+
+// CLC
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.C == 0);
+// LDA #$FE
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xFE);
+// tp3: ADC #$01
+u16 Tp3Addr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xFF);
+Assert(Chip.P.C == 0);
+// BCC tp3
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == Tp3Addr);
+// tp3: ADC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x00);
+Assert(Chip.P.C == 1);
+// BCC tp3
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+// ADC #$01
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x02);
+Assert(Chip.P.C == 0);
+// tp4: SBC #$01 
+u16 Tp4Addr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0x00);
+Assert(Chip.P.C == 1);
+// BCS tp4
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == Tp4Addr);
+// tp4: SBC #$01 
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.A == 0xFF);
+Assert(Chip.P.C == 0);
+// BCS tp4
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 2);
+
+// SEI     ; set interrupt
+Assert(Chip.P.I == 0);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.I == 1);
+// CLI     ; clear interrupt
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.I == 0);
+// SED     ; set decimal
+Assert(Chip.P.D == 0);
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.D == 1);
+// CLD     ; clear decimal
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.P.D == 0);

@@ -21,7 +21,7 @@ union status_flags_type
    {
       u8 C      : 1;
       u8 Z      : 1;
-      u8 IntDisable : 1;
+      u8 I      : 1;
       u8 D      : 1;
       u8 Spare  : 2;
       u8 O      : 1;
@@ -157,6 +157,12 @@ Cmp(mos6502* Chip, u8 V)
 }
 
 inline void
+Branch(mos6502* Chip, i8 Rel)
+{
+   Chip->PC += Rel;
+}
+
+inline void
 ExecInstruction(mos6502* Chip, u8 Opcode)
 {
    switch(Opcode)
@@ -165,6 +171,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zp;
          Asl(Chip, r);
       } break; // ASL zp
+      case 0x10: {
+         AM_zp;
+         if (Chip->P.S == 0) 
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BPL
       case 0x0A: {
          Chip->P.C = (Chip->A & 0x8) >> 7;
          Chip->A = (Chip->A << 1);
@@ -179,6 +192,9 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zpx;
          Asl(Chip, r);
       } break; // ASL zpx
+      case 0x18: {
+         Chip->P.C = 0;
+      } break; // CLC
       case 0x1E: {
          AM_ax;
          Asl(Chip, r);
@@ -213,6 +229,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a;
          And(Chip, Read(Chip, r));
       } break; // AND abs
+      case 0x30: {
+         AM_zp;
+         if (Chip->P.S) 
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BMI
       case 0x31: {
          AM_iy;
          And(Chip, Read(Chip, r));
@@ -220,7 +243,10 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
       case 0x35: {
          AM_zpx;
          And(Chip, Read(Chip, r));
-      } break;
+      } break; // AND zpx
+      case 0x38: {
+         Chip->P.C = 1;
+      } break; // SEC
       case 0x3D: {
          AM_ax;
          And(Chip, Read(Chip, r));
@@ -229,6 +255,16 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_ay;
          And(Chip, Read(Chip, r));
       } break; // AND ay
+      case 0x50: {
+         AM_zp;
+         if (!Chip->P.O)
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BVS
+      case 0x58: {
+         Chip->P.I = 0;
+      } break; // CLI
       case 0x61: {
          AM_ix;
          Add(Chip, Read(Chip, r));
@@ -245,6 +281,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a;
          Add(Chip, Read(Chip, r));
       } break; // ADC abs
+      case 0x70: {
+         AM_zp;
+         if (Chip->P.O)
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BVS
       case 0x71: {
          AM_iy;
          Add(Chip, Read(Chip, r));
@@ -253,6 +296,9 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zpx;
          Add(Chip, Read(Chip, r));
       } break; // ADC zpx
+      case 0x78: {
+         Chip->P.I = 1;
+      } break; // SEI
       case 0x79: {
          AM_ay;
          Add(Chip, Read(Chip, r));
@@ -289,6 +335,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a; 
          Write(Chip, r, Chip->X);
       } break; // STX addr
+      case 0x90: { 
+         AM_zp; 
+         if(!Chip->P.C)
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BCC
       case 0x91: { 
          AM_iy;
          Write(Chip, r, Chip->A);
@@ -353,6 +406,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a; 
          LD(&Chip->X,Read(Chip, r));
       } break; // LDX a
+      case 0xB0: { 
+         AM_zp; 
+         if(Chip->P.C)
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BCS
       case 0xB1: { 
          AM_iy; 
          LD(&Chip->A,Read(Chip, r));
@@ -369,6 +429,9 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zpy;
          LD(&Chip->X,Read(Chip, r));
       } break; // LDX zpy
+      case 0xB8: { 
+         Chip->P.O = 0;
+      } break; // CLV
       case 0xB9: { 
          AM_ay;
          LD(&Chip->A,Read(Chip, r));
@@ -401,6 +464,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a;
          Cmp(Chip, Read(Chip, r));
       } break; // CMP abs
+      case 0xD0: {
+         AM_zp;
+         if (!Chip->P.Z)
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BEQ
       case 0xD1: {
          AM_iy;
          Cmp(Chip, Read(Chip, r));
@@ -409,6 +479,9 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zpx;
          Cmp(Chip, Read(Chip, r));
       } break; // CMP zpx
+      case 0xD8: {
+         Chip->P.D = 0;
+      } break; // CLD
       case 0xD9: {
          AM_ay;
          Cmp(Chip, Read(Chip, r));
@@ -433,6 +506,13 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_a;
          Add(Chip, ~Read(Chip, r));
       } break; // SBC abs
+      case 0xF0: {
+         AM_zp;
+         if (Chip->P.Z)
+         {
+            Branch(Chip, *(i8*)&r);
+         }
+      } break; // BEQ
       case 0xF1: {
          AM_iy;
          Add(Chip, ~Read(Chip, r));
@@ -441,6 +521,9 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_zpx;
          Add(Chip, ~Read(Chip, r));
       } break; // SBC zpx
+      case 0xF8: {
+         Chip->P.D = 1;
+      } break; // CLD
       case 0xF9: {
          AM_ay;
          Add(Chip, ~Read(Chip, r));
