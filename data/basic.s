@@ -154,6 +154,22 @@ tp4:
     SED     ; set decimal
     CLD     ; clear decimal
 
+    LDA #$00
+    JMP there
+    BRK
+    BRK
+    BRK
+there:
+    STA $20FF
+    LDA #$FF
+    STA $2100
+    LDA #$13
+    STA $2000
+    JMP ($20FF) ; jump to $1300 (test the wrap around)
+here:
+    .dsb $1300-here,$0
+    BRK
+
 end:
     .dsb $fffa-end,$0
     .word $1000,$1000,$0

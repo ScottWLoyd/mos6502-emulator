@@ -255,6 +255,10 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_ay;
          And(Chip, Read(Chip, r));
       } break; // AND ay
+      case 0x4C: {
+         AM_a;
+         Chip->PC = r;
+      } break;
       case 0x50: {
          AM_zp;
          if (!Chip->P.O)
@@ -277,6 +281,17 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
          AM_imm;
          Add(Chip, r);
       } break; // ADC imm
+      case 0x6C: {
+         AM_a;
+         u16 Second = r + 1;
+         if ((Second / 0x100) != (r / 0x100))
+         {
+            Second -= 0x100;
+         }
+         u16 Hi = Read(Chip, Second);
+         u16 Lo = Read(Chip, r);
+         Chip->PC = (Hi << 8) | Lo;
+      } break;
       case 0x6D: {
          AM_a;
          Add(Chip, Read(Chip, r));

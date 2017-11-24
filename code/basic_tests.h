@@ -874,3 +874,35 @@ Assert(Chip.P.D == 1);
 Op = Chip.Ram[Chip.PC++];
 ExecInstruction(&Chip, Op);
 Assert(Chip.P.D == 0);
+
+//
+// Jump tests
+//
+
+// LDA #$00
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// JMP there
+TempAddr = Chip.PC;
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == TempAddr + 6); // JMP $## ## BRK BRK BRK = 6
+// there: STA $20FF
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// LDA #$FF
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// STA $2100
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// LDA #$13
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+// STA $2000
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+//JMP ($2000) ; jump to $1300 (test the wrap around)
+Op = Chip.Ram[Chip.PC++];
+ExecInstruction(&Chip, Op);
+Assert(Chip.PC == 0x1300);
