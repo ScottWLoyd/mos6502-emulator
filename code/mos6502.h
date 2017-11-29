@@ -23,7 +23,8 @@ union status_flags_type
       u8 Z      : 1;
       u8 I      : 1;
       u8 D      : 1;
-      u8 Spare  : 2;
+      u8 B      : 1;
+      u8 Spare  : 1;
       u8 O      : 1;
       u8 S      : 1;
    };
@@ -51,13 +52,15 @@ enum interrupt_type
    Interrupt_Nmi,
    Interrupt_Reset,
    Interrupt_Irq,
+   Interrupt_Brk,
 };
 
-u16 InterruptVectors[3][2] = 
+u16 InterruptVectors[4] = 
 {
-   {0xFFFA, 0xFFFB}, // NMI
-   {0xFFFC, 0xFFFD}, // Reset
-   {0xFFFE, 0xFFFF}, // IRQ
+   0xFFFA, // NMI
+   0xFFFC, // Reset
+   0xFFFE, // IRQ
+   0xFFFE, // BRK
 };
 
 //
@@ -77,9 +80,32 @@ ReadAddress(mos6502* Chip, u16 Addr)
 }
 
 inline void
+Push(mos6502* Chip, u8 V)
+{
+   Chip->Ram[0x100 + (Chip->S--)] = V;
+}
+
+inline u8
+Pop(mos6502* Chip)
+{
+   return Chip->Ram[0x100 + (++Chip->S)];
+}
+
+inline void
 HandleInterrupt(mos6502* Chip, interrupt_type Type)
 {
-   u16 Addr = ReadAddress(Chip, InterruptVectors[Type][0]);
+   if (Type != Interrupt_Reset)
+   {
+      Push(Chip, Chip->PC >> 8); Push(Chip, Chip->PC & 0xFF);
+      Chip->P.B = (Type == Interrupt_Brk);
+      Push(Chip, Chip->P.Value);
+   }
+   else
+   {
+      Chip->S -= 3;
+   }
+   Chip->P.I = 1;
+   u16 Addr = ReadAddress(Chip, InterruptVectors[Type]);
    Chip->PC = Addr;
 }
 
@@ -167,6 +193,11 @@ ExecInstruction(mos6502* Chip, u8 Opcode)
 {
    switch(Opcode)
    {
+      case 0x00: {
+         printf("BRK\n");
+         Chip->P.B = 1;
+         HandleInterrupt(Chip, Interrupt_Brk);
+      } break;
       case 0x06: {
          AM_zp;
          Asl(Chip, r);
