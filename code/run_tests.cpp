@@ -1,35 +1,15 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define internal static
-
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long u64;
-
-typedef char i8;
-typedef short i16;
-typedef int i32;
-typedef long i64;
-
-typedef float f32;
-
+#include "common.h"
 #include "mos6502.h"
-
-#define DEBUG
-
-#ifdef DEBUG
-#define Assert(X) if(!(X)){ fprintf(stderr, "Assertion failed! line: %d\n", __LINE__); fflush(stderr); *(int*)0=1;}
-#else
-#define Assert(X)
-#endif
 
 internal u32
 ConvertAddress(char* AddrStr)
 {
-   u32 Len = strlen(AddrStr);
+   size_t Len = strlen(AddrStr);
    if (Len > 2)
    {
       if (AddrStr[0] == '0' && (AddrStr[1] == 'X' || AddrStr[1] == 'x'))
@@ -61,10 +41,10 @@ GetFileName(char* Path)
    return LastSlash;
 }
 
-inline u16
+inline u8
 Read(mos6502* Chip, u16 Addr)
 {
-   u16 Result = Chip->Ram[Addr];
+   u8 Result = Chip->Ram[Addr];
    return Result;
 }
 
@@ -79,7 +59,11 @@ int main(int ArgCount, char** Args)
    if (3 != ArgCount)
    {
       fprintf(stderr, "\nUsage: %s ROM_PATH LOAD_ADDRESS\n", Args[0]);
+#if _DEBUG
+	  __debugbreak();
+#else
       exit(1);
+#endif
    }
 
    char* TestRomPath = Args[1];
@@ -89,7 +73,11 @@ int main(int ArgCount, char** Args)
    if (!File)
    {
       fprintf(stderr, "Unable to open test ROM path: %s\n", TestRomPath);
-      exit(1);
+#if _DEBUG
+	  __debugbreak();
+#else
+	  exit(1);
+#endif
    }
 
    fseek(File, 0, SEEK_END);
@@ -97,11 +85,13 @@ int main(int ArgCount, char** Args)
    fseek(File, 0, SEEK_SET);
 
    u8* Rom = (u8*)malloc(Size);
-   u32 ActualSize = fread(Rom, 1, Size, File);
+   size_t ActualSize = fread(Rom, 1, Size, File);
    fclose(File);
 
    mos6502 Chip = {};
-   InitChip(&Chip, Rom, ActualSize, LoadAddress);
+   Chip.Read = Read;
+   Chip.Write = Write;
+   Chip.Init(Rom, ActualSize, LoadAddress);
 
    char* Filename = GetFileName(TestRomPath);   
    if (strcmp(Filename, "basic.bin") == 0)
@@ -113,8 +103,7 @@ int main(int ArgCount, char** Args)
       while (1)
       {
          fprintf(stdout, "\nAddr: %04X, Instr: %02X\n", Chip.PC, Chip.Ram[Chip.PC]); 
-         u8 Opcode = Chip.Ram[Chip.PC++];
-         ExecInstruction(&Chip, Opcode);
+         Chip.Exec();
 
          fprintf(stdout, "State: {A: %02X, X: %02X, Y: %02X, P: %02X, S: %02X, PC: %04X}\n", 
             Chip.A, Chip.X, Chip.Y, Chip.P.O, Chip.S, Chip.PC);

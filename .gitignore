@@ -1,4 +1,7 @@
 build
-*.sublime-*
 data/xa-2.3.8/
 data/xa.exe
+.vs
+x64
+Debug
+Release
