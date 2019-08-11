@@ -1,5 +1,6 @@
 
 .dsb $1000,$0
+	* = $1000
 
     LDA #$01    ; 0xA9
     STA $0200   ; 0x8D
@@ -114,13 +115,16 @@
     ; branching tests
     SEC
     LDA #$02
+
 decrement:
     SBC #$01
     BPL decrement 
+
 compare:
     CMP #$FF
     BEQ decrement
     BMI increment
+
 increment:
     CLC
     ADC #$01
@@ -128,10 +132,12 @@ increment:
     BNE increment
 
     LDA #$7F ; A=$7F=(127)
+
 tp1:
     CLC
     ADC #$01 ; A=$80=(128), O=1
     BVS tp1
+
 tp2:
     CLC
     ADC #$FF ; A=(-128), O=0
@@ -140,11 +146,13 @@ tp2:
 
     CLC
     LDA #$FE
+
 tp3: 
     ADC #$01
     BCC tp3
 
     ADC #$01
+
 tp4:
     SBC #$01 
     BCS tp4
@@ -154,24 +162,47 @@ tp4:
     SED     ; set decimal
     CLD     ; clear decimal
 
-    LDA #$00
     JMP there
     BRK
     BRK
     BRK
+
 there:
+    LDA #$00
     STA $20FF
     LDA #$FF
     STA $2100
-    LDA #$13
+    LDA #$25
     STA $2000
-    JMP ($20FF) ; jump to $1300 (test the wrap around)
-here:
-    .dsb $1300-here,$0
-    BRK
+    JMP ($20FF) ; jump to $2500 (test the wrap around)
+	; Will return here at end of jumptest
+	
 
-    
+.dsb $2400-*,$AB
+here:
+	BRK
+	    		
+.dsb $2500-*,$CD
+jumptest:
+    LDA #$47
+	PHA
+	LDA #$32
+	PHA
+	JSR subroutine1
+	LDA #$02
+	
+.dsb $2600-*,$EF
+subroutine1:
+	LDA #$01
+	JSR subroutine2
+	LDA #$00
+	
+.dsb $2700-*,$99
+subroutine2:
+	PLA
+	PLA
+	RTS
 
 end:
-    .dsb $fffa-end,$0
-    .word $1000,$1000,$0
+	.dsb $FFFA-end,$0
+	.word $1000,$1000,$0000  ; interrupt vectors
