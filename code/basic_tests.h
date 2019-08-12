@@ -11,7 +11,6 @@ Assert(Chip.S == 0xFD);
 //
 // Verify Reset State
 //
-Chip.P.I = 0; // Have to clear so reset will be handled
 Chip.Interrupt(Interrupt_Reset);
 Assert(Chip.P.Value == 0x34);
 Assert(Chip.A == 0);
@@ -34,7 +33,7 @@ Chip.P.I = 0;
 // Load immediate / Store absolute
 // 
 
-// LDA #$01  { A9 }
+// LDA #$01 
 Chip.Exec();
 Assert(Chip.A == 1);
 // STA $0200
@@ -771,22 +770,77 @@ Assert(Chip.P.D == 0);
 // Jump tests
 //
 
-// LDA #$00
-Chip.Exec();
 // JMP there
 TempAddr = Chip.PC;
 Chip.Exec();
 Assert(Chip.PC == TempAddr + 6); // JMP $## ## BRK BRK BRK = 6
-// there: STA $20FF
+// there: 
+// LDA #$00
+Chip.Exec();
+// STA $20FF
 Chip.Exec();
 // LDA #$FF
 Chip.Exec();
 // STA $2100
 Chip.Exec();
-// LDA #$13
+// LDA #$25
 Chip.Exec();
 // STA $2000
 Chip.Exec();
-//JMP ($2000) ; jump to $1300 (test the wrap around)
+//JMP ($20FF) ; jump to $2500 (jumptest) to check wraparound
 Chip.Exec();
-Assert(Chip.PC == 0x1300);
+Assert(Chip.PC == 0x2500);
+
+// LDA $47
+Chip.Exec();
+Assert(Chip.A == 0x47);
+// PHA
+u16 temp_stack = Chip.S;
+Chip.Exec();
+Assert(Chip.S == temp_stack - 1);
+Assert(Chip.Ram[0x100 + temp_stack] == 0x47);
+// LDA $32
+Chip.Exec();
+Assert(Chip.A == 0x32);
+// PHA
+temp_stack = Chip.S;
+Chip.Exec();
+Assert(Chip.S == temp_stack - 1);
+Assert(Chip.Ram[0x100 + temp_stack] == 0x32);
+// JSR subroutine1
+u16 return_address = Chip.PC + 3;
+Chip.Exec();
+
+// subroutine1:
+Assert(Chip.PC == 0x2600);
+// LDA $01
+Chip.Exec();
+Assert(Chip.A == 0x01);
+// JSR subroutine2
+Chip.Exec();
+
+// LDA $00 ; never gets executed
+
+// subroutine2:
+Assert(Chip.PC == 0x2700);
+// Stack should now have $05 $26 on it.
+// subroutine1 @ 2600 + 5 words (LDA $01 JSR $2700)
+// PLA
+temp_stack = Chip.S;
+Chip.Exec();
+Assert(Chip.S == temp_stack + 1);
+Assert(Chip.A == 0x04);
+// PLA
+Chip.Exec();
+Assert(Chip.S == temp_stack + 2);
+Assert(Chip.A == 0x26);
+// RTS
+Chip.Exec();
+Assert(Chip.PC == return_address);
+
+// back in jumptest
+//LDA $02 
+Chip.Exec();
+Assert(Chip.A == 0x02);
+
+// 

@@ -54,7 +54,7 @@ struct mos6502
    u8 Ram[KB(64)];
    u16 InterruptVectors[4];
    
-   void Init(u8* Rom, size_t RomLen, u16 LoadAddress); 
+   void Init(u8* Rom, size_t RomLen, u16 LoadAddress = 0, u16 InitialPC = 0); 
    void Exec();
    void Interrupt(interrupt_type Type);
    BusReadFunc Read;

@@ -5,7 +5,7 @@
 #include "mos6502.h"
 
 
-void mos6502::Init(u8* Rom, size_t RomLen, u16 LoadAddress)
+void mos6502::Init(u8* Rom, size_t RomLen, u16 LoadAddress, u16 InitialPC)
 {
    InterruptVectors[Interrupt_Nmi]   = 0xFFFA;
    InterruptVectors[Interrupt_Reset] = 0xFFFC, // Reset
@@ -15,14 +15,49 @@ void mos6502::Init(u8* Rom, size_t RomLen, u16 LoadAddress)
    // Ref: http://wiki.nesdev.com/w/index.php/CPU_power_up_state
    P.Value = 0x34;
    A = X = Y = 0;
-   S = 0xFD;
+   S = 0x0; // Setting to 0 means the 3 Pop()'s that happen during
+   // reset will result in a Stack of 0xFD.
    memcpy(Ram + LoadAddress, Rom, RomLen);
+
+   // NOTE(scott): This may be incorrect. Documentation does not seem
+   // to state that power up clears the I bit, but resets are able to
+   // happen obviously. 
+   P.I = 0;
+   Interrupt(Interrupt_Reset);
 }
 
 void mos6502::Exec()
 {
    u8 Opcode = Ram[PC++];
+
+   if (Opcode == 0)
+   {
+      __debugbreak();
+   }
+
    ExecInstruction(Opcode);
+
+   // TODO(scott): check for HW interrupts at this point
+}
+
+inline void mos6502::Interrupt(interrupt_type Type)
+{
+   // If interrupt disable is true, all interrupts
+   // are ignored except NMI
+   if (P.I && Type == Interrupt_Irq)
+   {
+      return;
+   }
+
+   // Push the Program Counter and Status 
+   // Register onto the stack
+   Push(PC >> 8); Push(PC & 0xFF);
+   Push(P.Value);
+
+   P.I = 1;
+
+   u16 Addr = ReadAddress(InterruptVectors[Type]);
+   PC = Addr;
 }
 
 inline u16 mos6502::ReadAddress(u16 Addr)
@@ -41,30 +76,6 @@ inline void mos6502::Push(u8 V)
 inline u8 mos6502::Pop()
 {
    return Ram[0x100 + (++S)];
-}
-
-inline void mos6502::Interrupt(interrupt_type Type)
-{
-   // If interrupt disable is true, all interrupts
-   // are ignored except NMI
-   if (P.I && Type != Interrupt_Nmi)
-   {
-      return;
-   }
-   P.I = 1;  // Disable interrupts
-   // Store the Program Counter and Status Register
-   if (Type != Interrupt_Reset)
-   {
-      Push(PC >> 8); Push(PC & 0xFF);
-      P.B = (Type == Interrupt_Brk);
-      Push(P.Value);
-   }
-   else
-   {
-      S -= 3;
-   }
-   u16 Addr = ReadAddress(InterruptVectors[Type]);
-   PC = Addr;
 }
 
 
@@ -142,6 +153,10 @@ inline void mos6502::ExecInstruction(u8 Opcode)
       AM_zp;
       Asl(r);
    } break; // ASL zp
+   case 0x08: {
+      P.B = 1;
+      Push(P.Value);
+   } break; // PHP
    case 0x10: {
       AM_zp;
       if (P.S == 0)
@@ -166,6 +181,12 @@ inline void mos6502::ExecInstruction(u8 Opcode)
    case 0x18: {
       P.C = 0;
    } break; // CLC
+   case 0x20: {
+      AM_a;
+      u16 a = PC - 1;
+      Push(a >> 8); Push(a & 0xFF);
+      PC = r;
+   } break; // JSR
    case 0x1E: {
       AM_ax;
       Asl(r);
@@ -184,6 +205,9 @@ inline void mos6502::ExecInstruction(u8 Opcode)
    case 0x25: {
       AM_zp;
       And(Read(this, r));
+   } break; // AND zp
+   case 0x28: {
+      P.Value = Pop();
    } break; // AND zp
    case 0x29: {
       AM_imm;
@@ -226,10 +250,19 @@ inline void mos6502::ExecInstruction(u8 Opcode)
       AM_ay;
       And(Read(this, r));
    } break; // AND ay
+   case 0x40: {
+      P.Value = Pop();
+      u8 Lo = Pop();
+      u8 Hi = Pop();
+      PC = ((u16)Hi << 8) | (u16)Lo;      
+   } break; // RTI
+   case 0x48: {
+      Push(A);
+   } break; // PHA
    case 0x4C: {
       AM_a;
       PC = r;
-   } break;
+   } break; // JMP
    case 0x50: {
       AM_zp;
       if (!P.O)
@@ -237,12 +270,23 @@ inline void mos6502::ExecInstruction(u8 Opcode)
          Branch(*(i8*)&r);
       }
    } break; // BVS
+   case 0x55: {
+      AM_zpx;
+      A = A ^ r;
+      SetSZ(A);
+   } break; // XOR
    case 0x58: {
       P.I = 0;
       // TODO(Scott): Implement discrete lines. When I bit is
       // cleared, if /IRQ line is low, an interrupt is immediately
       // triggered.
    } break; // CLI
+   case 0x60: {
+      u8 Lo = Pop();
+      u8 Hi = Pop();
+      PC = ((u16)Hi << 8) | (u16)Lo;
+      PC++;
+   } break; // RTS
    case 0x61: {
       AM_ix;
       Add(Read(this, r));
@@ -251,6 +295,10 @@ inline void mos6502::ExecInstruction(u8 Opcode)
       AM_zp;
       Add(Read(this, r));
    } break; // ADC zp
+   case 0x68: {      
+      A = Pop();
+      SetSZ(A);
+   } break; // PLA
    case 0x69: {
       AM_imm;
       Add(r);
@@ -351,6 +399,9 @@ inline void mos6502::ExecInstruction(u8 Opcode)
       AM_ax;
       Write(this, r, A);
    } break; // STA ay
+   case 0x9A: {
+      S = X;
+   } break; // TSX
    case 0x9D: {
       AM_ax;
       Write(this, r, A);
@@ -525,7 +576,11 @@ inline void mos6502::ExecInstruction(u8 Opcode)
 
    default: {
       fprintf(stderr, "Unimplemented Opcode: %02X\n", Opcode);
+#if _DEBUG
+      __debugbreak();
+#else
       exit(1);
+#endif
    } break;
    }
 }

@@ -56,9 +56,9 @@ Write(mos6502* Chip, u16 Addr, u8 Value)
 
 int main(int ArgCount, char** Args)
 {
-   if (3 != ArgCount)
+   if (2 > ArgCount || ArgCount > 4)
    {
-      fprintf(stderr, "\nUsage: %s ROM_PATH LOAD_ADDRESS\n", Args[0]);
+      fprintf(stderr, "\nUsage: %s ROM_PATH <LOAD_ADDRESS> <INITIAL_PC>\n", Args[0]);
 #if _DEBUG
 	  __debugbreak();
 #else
@@ -67,7 +67,18 @@ int main(int ArgCount, char** Args)
    }
 
    char* TestRomPath = Args[1];
-   u16 LoadAddress = ConvertAddress(Args[2]);
+
+   u16 LoadAddress = 0;
+   if (ArgCount == 3)
+   {
+      LoadAddress = ConvertAddress(Args[2]);
+   }
+   
+   u16 InitialPC = 0;
+   if (ArgCount == 4)
+   {
+      InitialPC = ConvertAddress(Args[3]);
+   }
 
    FILE* File = fopen(TestRomPath, "rb");
    if (!File)
@@ -91,7 +102,7 @@ int main(int ArgCount, char** Args)
    mos6502 Chip = {};
    Chip.Read = Read;
    Chip.Write = Write;
-   Chip.Init(Rom, ActualSize, LoadAddress);
+   Chip.Init(Rom, ActualSize, LoadAddress, InitialPC);
 
    char* Filename = GetFileName(TestRomPath);   
    if (strcmp(Filename, "basic.bin") == 0)
@@ -111,6 +122,9 @@ int main(int ArgCount, char** Args)
    }
 
    fprintf(stdout, "Execution complete.\n");
+#if _DEBUG
+   __debugbreak();
+#endif
 
    return 0;
 }
